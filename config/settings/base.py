@@ -174,6 +174,12 @@ FUEL_ROUTE_CONFIG = {
     # How far (miles) a fuel station may be from the route polyline and
     # still be considered "on the route".
     "STATION_CORRIDOR_MILES": float(os.environ.get("STATION_CORRIDOR_MILES", "5")),
+    # A later stop must be cheaper than the current one by more than this
+    # (USD/gal) to be worth a detour; smaller differences are folded into
+    # the next stop that clears the bar. See routing.services.optimizer.
+    "MIN_PRICE_DIFFERENTIAL_PER_GALLON": float(
+        os.environ.get("MIN_PRICE_DIFFERENTIAL_PER_GALLON", "0.05")
+    ),
     # External services (free, keyless)
     "OSRM_BASE_URL": os.environ.get("OSRM_BASE_URL", "https://router.project-osrm.org"),
     "NOMINATIM_BASE_URL": os.environ.get(

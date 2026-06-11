@@ -10,6 +10,7 @@ responses.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -64,8 +65,14 @@ class RoutePlannerService:
         """
         config = settings.FUEL_ROUTE_CONFIG
 
-        origin_coords = self.geocoding_provider.geocode(origin)
-        destination_coords = self.geocoding_provider.geocode(destination)
+        # Geocode both locations concurrently - they're independent network
+        # calls, so there's no reason to pay for them sequentially.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            origin_future = executor.submit(self.geocoding_provider.geocode, origin)
+            destination_future = executor.submit(self.geocoding_provider.geocode, destination)
+            origin_coords = origin_future.result()
+            destination_coords = destination_future.result()
+
         route = self.routing_provider.get_route(origin_coords, destination_coords)
 
         candidates = list(
@@ -84,6 +91,7 @@ class RoutePlannerService:
             vehicle_range_miles=config["VEHICLE_RANGE_MILES"],
             mpg=config["VEHICLE_MPG"],
             national_avg_price_per_gallon=get_national_average_price_per_gallon(),
+            min_price_differential=config["MIN_PRICE_DIFFERENTIAL_PER_GALLON"],
         )
 
         return RoutePlan(

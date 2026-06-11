@@ -22,6 +22,10 @@ class RoutePlanView(APIView):
     cache, so repeats make no external geocoding/routing calls at all.
     """
 
+    # Public, anonymous endpoint: no session/basic auth, so a browser
+    # session that happens to be logged into /admin can't trigger
+    # SessionAuthentication's CSRF enforcement on this POST.
+    authentication_classes: list = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "route-plan"
 
