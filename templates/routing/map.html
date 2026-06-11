@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fuel Route Planner</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family:
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+      .layout {
+        display: flex;
+        height: 100vh;
+      }
+      .sidebar {
+        width: 360px;
+        flex-shrink: 0;
+        padding: 16px;
+        overflow-y: auto;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+      }
+      #map {
+        flex: 1;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 12px;
+      }
+      h3 {
+        font-size: 1rem;
+        margin: 16px 0 8px;
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #334155;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.95rem;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #93c5fd;
+        cursor: wait;
+      }
+      #status {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        min-height: 1.2em;
+      }
+      #status.error {
+        color: #dc2626;
+      }
+      #status.loading {
+        color: #475569;
+      }
+      #summary {
+        margin-top: 16px;
+      }
+      #summary.hidden,
+      #stops.hidden {
+        display: none;
+      }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .summary-grid .label {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+      .summary-grid .value {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .stop {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      .stop-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+      .stop-index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #f59e0b;
+        color: #fff;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+      }
+      .stop-detail {
+        font-size: 0.85rem;
+        color: #475569;
+        margin-top: 4px;
+      }
+      .no-stops {
+        font-size: 0.9rem;
+        color: #475569;
+      }
+      .pin {
+        width: 28px;
+        height: 28px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      }
+      .pin span {
+        transform: rotate(45deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h1>Fuel Route Planner</h1>
+        <form id="route-form">
+          <label for="start">Start</label>
+          <input
+            type="text"
+            id="start"
+            placeholder="e.g. Los Angeles, CA"
+            required
+          />
+
+          <label for="finish">Finish</label>
+          <input
+            type="text"
+            id="finish"
+            placeholder="e.g. Chicago, IL"
+            required
+          />
+
+          <button type="submit" id="submit-btn">Plan Route</button>
+        </form>
+        <div id="status"></div>
+
+        <div id="summary" class="hidden">
+          <h3>Trip Summary</h3>
+          <div class="summary-grid">
+            <div>
+              <div class="label">Distance</div>
+              <div class="value" id="summary-distance">-</div>
+            </div>
+            <div>
+              <div class="label">Drive Time</div>
+              <div class="value" id="summary-duration">-</div>
+            </div>
+            <div>
+              <div class="label">Fuel Cost</div>
+              <div class="value" id="summary-fuel-cost">-</div>
+            </div>
+            <div>
+              <div class="label">Fuel Used</div>
+              <div class="value" id="summary-fuel-gallons">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="stops"></div>
+      </aside>
+      <main id="map"></main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const map = L.map("map").setView([39.8283, -98.5795], 4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(map);
+
+      let routeLayer = null;
+      const markersLayer = L.layerGroup().addTo(map);
+
+      const form = document.getElementById("route-form");
+      const submitBtn = document.getElementById("submit-btn");
+      const statusEl = document.getElementById("status");
+      const summaryEl = document.getElementById("summary");
+      const stopsEl = document.getElementById("stops");
+
+      function pinIcon(label, color) {
+        return L.divIcon({
+          className: "",
+          html: `<div class="pin" style="background:${color}"><span>${label}</span></div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+          popupAnchor: [0, -28],
+        });
+      }
+
+      function setStatus(message, kind) {
+        statusEl.textContent = message;
+        statusEl.className = kind || "";
+      }
+
+      function formatError(data) {
+        if (data && typeof data.error === "string") {
+          let msg = data.error;
+          if (data.gap_miles !== undefined) {
+            msg +=
+              ` (gap of ${data.gap_miles} mi between mile ${data.from_mile} and ${data.to_mile} ` +
+              `exceeds the ${data.range_miles} mi vehicle range)`;
+          }
+          return msg;
+        }
+        if (data && typeof data === "object") {
+          return Object.entries(data)
+            .map(
+              ([field, errors]) =>
+                `${field}: ${Array.isArray(errors) ? errors.join(", ") : errors}`,
+            )
+            .join("; ");
+        }
+        return "Something went wrong while planning the route.";
+      }
+
+      function renderResult(data) {
+        if (routeLayer) {
+          map.removeLayer(routeLayer);
+        }
+        markersLayer.clearLayers();
+
+        const latlngs = data.geometry.map((p) => [p.latitude, p.longitude]);
+        routeLayer = L.polyline(latlngs, { color: "#2563eb", weight: 4 }).addTo(
+          map,
+        );
+        map.fitBounds(routeLayer.getBounds(), { padding: [30, 30] });
+
+        L.marker([data.origin.latitude, data.origin.longitude], {
+          icon: pinIcon("A", "#16a34a"),
+        })
+          .addTo(markersLayer)
+          .bindPopup("<strong>Start</strong>");
+
+        L.marker([data.destination.latitude, data.destination.longitude], {
+          icon: pinIcon("B", "#dc2626"),
+        })
+          .addTo(markersLayer)
+          .bindPopup("<strong>Finish</strong>");
+
+        data.fuel_plan.stops.forEach((stop, i) => {
+          const station = stop.station;
+          L.marker([station.latitude, station.longitude], {
+            icon: pinIcon(String(i + 1), "#f59e0b"),
+          })
+            .addTo(markersLayer)
+            .bindPopup(
+              `<strong>${station.name}</strong><br>` +
+                `${station.address}, ${station.city}, ${station.state}<br>` +
+                `Mile ${stop.mile_marker} &middot; ${stop.gallons_purchased.toFixed(2)} gal @ ` +
+                `$${stop.price_per_gallon.toFixed(3)}/gal<br>` +
+                `<strong>$${stop.cost.toFixed(2)}</strong>`,
+            );
+        });
+
+        const hours = Math.floor(data.duration_seconds / 3600);
+        const minutes = Math.round((data.duration_seconds % 3600) / 60);
+
+        document.getElementById("summary-distance").textContent =
+          `${data.distance_miles} mi`;
+        document.getElementById("summary-duration").textContent =
+          `${hours}h ${minutes}m`;
+        document.getElementById("summary-fuel-cost").textContent =
+          `$${data.fuel_plan.total_cost.toFixed(2)}`;
+        document.getElementById("summary-fuel-gallons").textContent =
+          `${data.fuel_plan.total_gallons.toFixed(2)} gal`;
+        summaryEl.classList.remove("hidden");
+
+        if (data.fuel_plan.stops.length === 0) {
+          stopsEl.innerHTML =
+            '<h3>Fuel Stops</h3><p class="no-stops">' +
+            "No refueling stops needed - this trip fits within the vehicle's range.</p>";
+          return;
+        }
+
+        stopsEl.innerHTML =
+          "<h3>Fuel Stops</h3>" +
+          data.fuel_plan.stops
+            .map((stop, i) => {
+              const station = stop.station;
+              return `
+          <div class="stop">
+            <div class="stop-header">
+              <span class="stop-index">${i + 1}</span>
+              <span>${station.name}</span>
+            </div>
+            <div class="stop-detail">${station.city}, ${station.state} &middot; mile ${stop.mile_marker}</div>
+            <div class="stop-detail">
+              ${stop.gallons_purchased.toFixed(2)} gal @ $${stop.price_per_gallon.toFixed(3)}/gal
+              = $${stop.cost.toFixed(2)}
+            </div>
+          </div>
+        `;
+            })
+            .join("");
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const start = document.getElementById("start").value.trim();
+        const finish = document.getElementById("finish").value.trim();
+        if (!start || !finish) {
+          return;
+        }
+
+        submitBtn.disabled = true;
+        summaryEl.classList.add("hidden");
+        stopsEl.innerHTML = "";
+        setStatus("Planning route...", "loading");
+
+        try {
+          const response = await fetch("/api/v1/routes/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ start, finish }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(formatError(data));
+          }
+
+          setStatus("", "");
+          renderResult(data);
+        } catch (err) {
+          setStatus(err.message, "error");
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
