@@ -9,6 +9,24 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
     <style>
+      :root {
+        --sidebar-w: 400px;
+        --bg: linear-gradient(180deg, #fdfcfa 0%, #f6f3ee 100%);
+        --panel: #ffffff;
+        --border: #e8e4dd;
+        --ink: #2b2722;
+        --muted: #8a8378;
+        --accent: #2b2722;
+        --start: #2e7d52;
+        --finish: #b3473f;
+        --fuel: #b07d2b;
+        --danger: #b3473f;
+        --radius: 10px;
+        --shadow-sm: 0 1px 2px rgba(43, 39, 34, 0.06);
+        --shadow-md: 0 4px 16px rgba(43, 39, 34, 0.08);
+        --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -16,153 +34,321 @@
       body {
         height: 100%;
         margin: 0;
-        font-family:
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          Helvetica,
-          Arial,
-          sans-serif;
       }
+      body {
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+
       .layout {
         display: flex;
         height: 100vh;
       }
+
+      /* ---------- Sidebar ---------- */
       .sidebar {
-        width: 360px;
+        width: var(--sidebar-w);
         flex-shrink: 0;
-        padding: 16px;
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
         overflow-y: auto;
-        background: #f8fafc;
-        border-right: 1px solid #e2e8f0;
+        padding: 28px 26px 32px;
+        animation: fadeIn 0.4s var(--ease);
       }
-      #map {
-        flex: 1;
+      .sidebar::-webkit-scrollbar {
+        width: 6px;
       }
-      h1 {
-        font-size: 1.25rem;
-        margin: 0 0 12px;
+      .sidebar::-webkit-scrollbar-thumb {
+        background: #ddd8cf;
+        border-radius: 6px;
       }
-      h3 {
-        font-size: 1rem;
-        margin: 16px 0 8px;
-      }
-      label {
-        display: block;
-        font-size: 0.85rem;
+
+      .sidebar h1 {
+        font-size: 1.2rem;
         font-weight: 600;
-        margin-bottom: 4px;
-        color: #334155;
+        letter-spacing: -0.01em;
+        margin: 0 0 4px;
+      }
+      .subtitle {
+        font-size: 0.84rem;
+        color: var(--muted);
+        margin: 0 0 24px;
+        line-height: 1.5;
+      }
+
+      /* ---------- Form ---------- */
+      #route-form label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      .input-wrap {
+        position: relative;
+        margin-bottom: 16px;
+      }
+      .input-wrap .dot {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .dot-start {
+        background: var(--start);
+      }
+      .dot-finish {
+        background: var(--finish);
       }
       input[type="text"] {
         width: 100%;
-        padding: 8px 10px;
-        margin-bottom: 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 0.95rem;
+        padding: 12px 12px 12px 32px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 0.92rem;
+        font-family: inherit;
+        color: var(--ink);
+        background: #fdfcfa;
+        transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
       }
-      button {
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #c5beb2;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(43, 39, 34, 0.06);
+      }
+      input[type="text"]::placeholder {
+        color: #b6afa3;
+      }
+
+      button[type="submit"] {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
+        margin-top: 4px;
         border: none;
-        border-radius: 6px;
-        background: #2563eb;
+        border-radius: var(--radius);
+        background: var(--accent);
         color: #fff;
-        font-size: 0.95rem;
-        font-weight: 600;
+        font-size: 0.92rem;
+        font-weight: 500;
+        font-family: inherit;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease);
       }
-      button:disabled {
-        background: #93c5fd;
+      button[type="submit"]:hover {
+        background: #423c34;
+        box-shadow: var(--shadow-md);
+      }
+      button[type="submit"]:disabled {
+        opacity: 0.65;
         cursor: wait;
+        box-shadow: none;
       }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #fff;
+        display: none;
+        animation: spin 0.7s linear infinite;
+      }
+      button[type="submit"]:disabled .spinner {
+        display: inline-block;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ---------- Status ---------- */
       #status {
-        margin-top: 10px;
-        font-size: 0.9rem;
+        margin-top: 12px;
+        font-size: 0.84rem;
         min-height: 1.2em;
+        color: var(--muted);
       }
       #status.error {
-        color: #dc2626;
+        color: var(--danger);
+        font-weight: 500;
       }
-      #status.loading {
-        color: #475569;
+
+      /* ---------- Summary ---------- */
+      .section {
+        margin-top: 28px;
+        animation: fadeUp 0.35s var(--ease);
       }
-      #summary {
-        margin-top: 16px;
+      .section h3 {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 12px;
       }
-      #summary.hidden,
-      #stops.hidden {
+      .hidden {
         display: none;
       }
       .summary-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 12px;
+        gap: 10px;
+      }
+      .summary-grid > div {
+        background: #fdfcfa;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 14px;
       }
       .summary-grid .label {
-        font-size: 0.75rem;
-        color: #64748b;
+        font-size: 0.7rem;
         text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        font-weight: 600;
       }
       .summary-grid .value {
         font-size: 1.05rem;
-        font-weight: 700;
-        color: #0f172a;
+        font-weight: 600;
+        margin-top: 4px;
       }
+
+      /* ---------- Stops ---------- */
       .stop {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 8px;
+        background: #fdfcfa;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        animation: fadeUp 0.35s var(--ease) both;
+        animation-delay: calc(var(--i, 0) * 60ms);
+        transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      }
+      .stop:hover {
+        border-color: #cfc8bb;
+        box-shadow: var(--shadow-sm);
       }
       .stop-header {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         font-weight: 600;
+        font-size: 0.9rem;
       }
       .stop-index {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--fuel);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 600;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: #f59e0b;
-        color: #fff;
-        font-size: 0.8rem;
         flex-shrink: 0;
       }
       .stop-detail {
-        font-size: 0.85rem;
-        color: #475569;
+        font-size: 0.8rem;
+        color: var(--muted);
         margin-top: 4px;
+        padding-left: 30px;
       }
       .no-stops {
-        font-size: 0.9rem;
-        color: #475569;
+        font-size: 0.86rem;
+        color: var(--muted);
+        background: #fdfcfa;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 14px;
+        text-align: center;
+        margin: 0;
       }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ---------- Map ---------- */
+      #map {
+        flex: 1;
+        min-width: 0;
+        background: #f6f3ee;
+      }
+
+      /* ---------- Leaflet tweaks ---------- */
+      .leaflet-popup-content-wrapper {
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+      }
+      .leaflet-popup-content {
+        font-family: inherit;
+        font-size: 0.84rem;
+        line-height: 1.6;
+        margin: 12px 14px;
+      }
+      .leaflet-control-zoom {
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm) !important;
+      }
+
       .pin {
         width: 28px;
         height: 28px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-weight: 700;
-        font-size: 0.85rem;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        font-weight: 600;
+        font-size: 0.78rem;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(43, 39, 34, 0.3);
       }
-      .pin span {
-        transform: rotate(45deg);
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 720px) {
+        .layout {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+          max-height: 50vh;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
       }
     </style>
   </head>
@@ -170,28 +356,41 @@
     <div class="layout">
       <aside class="sidebar">
         <h1>Fuel Route Planner</h1>
+        <p class="subtitle">
+          Plan a route across the US with cost-optimal fuel stops.
+        </p>
+
         <form id="route-form">
           <label for="start">Start</label>
-          <input
-            type="text"
-            id="start"
-            placeholder="e.g. Los Angeles, CA"
-            required
-          />
+          <div class="input-wrap">
+            <span class="dot dot-start"></span>
+            <input
+              type="text"
+              id="start"
+              placeholder="e.g. Los Angeles, CA"
+              required
+            />
+          </div>
 
           <label for="finish">Finish</label>
-          <input
-            type="text"
-            id="finish"
-            placeholder="e.g. Chicago, IL"
-            required
-          />
+          <div class="input-wrap">
+            <span class="dot dot-finish"></span>
+            <input
+              type="text"
+              id="finish"
+              placeholder="e.g. Chicago, IL"
+              required
+            />
+          </div>
 
-          <button type="submit" id="submit-btn">Plan Route</button>
+          <button type="submit" id="submit-btn">
+            <span class="spinner"></span>
+            <span>Plan Route</span>
+          </button>
         </form>
         <div id="status"></div>
 
-        <div id="summary" class="hidden">
+        <div id="summary" class="section hidden">
           <h3>Trip Summary</h3>
           <div class="summary-grid">
             <div>
@@ -213,7 +412,7 @@
           </div>
         </div>
 
-        <div id="stops"></div>
+        <div id="stops" class="section hidden"></div>
       </aside>
       <main id="map"></main>
     </div>
@@ -226,7 +425,10 @@
         maxZoom: 19,
       }).addTo(map);
 
-      let routeLayer = null;
+      // The map container is sized by flexbox; recalculate when it changes.
+      window.addEventListener("resize", () => map.invalidateSize());
+
+      const routeLayer = L.layerGroup().addTo(map);
       const markersLayer = L.layerGroup().addTo(map);
 
       const form = document.getElementById("route-form");
@@ -240,8 +442,8 @@
           className: "",
           html: `<div class="pin" style="background:${color}"><span>${label}</span></div>`,
           iconSize: [28, 28],
-          iconAnchor: [14, 28],
-          popupAnchor: [0, -28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -16],
         });
       }
 
@@ -272,33 +474,47 @@
       }
 
       function renderResult(data) {
-        if (routeLayer) {
-          map.removeLayer(routeLayer);
-        }
+        routeLayer.clearLayers();
         markersLayer.clearLayers();
 
         const latlngs = data.geometry.map((p) => [p.latitude, p.longitude]);
-        routeLayer = L.polyline(latlngs, { color: "#2563eb", weight: 4 }).addTo(
-          map,
-        );
-        map.fitBounds(routeLayer.getBounds(), { padding: [30, 30] });
+
+        // White casing under the line keeps the route readable on any tile.
+        L.polyline(latlngs, {
+          color: "#ffffff",
+          weight: 7,
+          opacity: 0.9,
+          smoothFactor: 1,
+        }).addTo(routeLayer);
+        const route = L.polyline(latlngs, {
+          color: "#3d3833",
+          weight: 4,
+          opacity: 0.95,
+          smoothFactor: 1,
+        }).addTo(routeLayer);
 
         L.marker([data.origin.latitude, data.origin.longitude], {
-          icon: pinIcon("A", "#16a34a"),
+          icon: pinIcon("A", "#2e7d52"),
         })
           .addTo(markersLayer)
           .bindPopup("<strong>Start</strong>");
 
         L.marker([data.destination.latitude, data.destination.longitude], {
-          icon: pinIcon("B", "#dc2626"),
+          icon: pinIcon("B", "#b3473f"),
         })
           .addTo(markersLayer)
           .bindPopup("<strong>Finish</strong>");
 
+        // Fit to everything: route line, endpoints, and every fuel stop.
+        const bounds = route.getBounds();
+        bounds.extend([data.origin.latitude, data.origin.longitude]);
+        bounds.extend([data.destination.latitude, data.destination.longitude]);
+
         data.fuel_plan.stops.forEach((stop, i) => {
           const station = stop.station;
+          bounds.extend([station.latitude, station.longitude]);
           L.marker([station.latitude, station.longitude], {
-            icon: pinIcon(String(i + 1), "#f59e0b"),
+            icon: pinIcon(String(i + 1), "#b07d2b"),
           })
             .addTo(markersLayer)
             .bindPopup(
@@ -309,6 +525,9 @@
                 `<strong>$${stop.cost.toFixed(2)}</strong>`,
             );
         });
+
+        map.invalidateSize();
+        map.fitBounds(bounds, { padding: [48, 48] });
 
         const hours = Math.floor(data.duration_seconds / 3600);
         const minutes = Math.round((data.duration_seconds % 3600) / 60);
@@ -322,6 +541,7 @@
         document.getElementById("summary-fuel-gallons").textContent =
           `${data.fuel_plan.total_gallons.toFixed(2)} gal`;
         summaryEl.classList.remove("hidden");
+        stopsEl.classList.remove("hidden");
 
         if (data.fuel_plan.stops.length === 0) {
           stopsEl.innerHTML =
@@ -336,7 +556,7 @@
             .map((stop, i) => {
               const station = stop.station;
               return `
-          <div class="stop">
+          <div class="stop" style="--i:${i}">
             <div class="stop-header">
               <span class="stop-index">${i + 1}</span>
               <span>${station.name}</span>
@@ -363,6 +583,7 @@
 
         submitBtn.disabled = true;
         summaryEl.classList.add("hidden");
+        stopsEl.classList.add("hidden");
         stopsEl.innerHTML = "";
         setStatus("Planning route...", "loading");
 
