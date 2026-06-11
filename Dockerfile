@@ -26,8 +26,11 @@ COPY . /app/
 COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Expose port
+# Expose port (Documentation only, Railway ignores this and uses $PORT)
 EXPOSE 8000
 
 # Set the entrypoint
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# Default command if none is provided (e.g. by Railway)
+CMD gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3
