@@ -26,8 +26,7 @@ COPY . /app/
 COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Expose port (Documentation only, Railway ignores this and uses $PORT)
-EXPOSE 8000
+# (Removed EXPOSE 8000 to allow Railway to automatically configure routing via $PORT)
 
 # Set the entrypoint
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
