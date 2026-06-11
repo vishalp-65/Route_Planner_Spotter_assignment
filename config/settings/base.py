@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+import dj_database_url
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -89,10 +90,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 # SQLite (file-based, zero external services) keeps the project trivial to
 # run for review while remaining perfectly adequate for this dataset size.
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.environ.get("DJANGO_DB_PATH", str(BASE_DIR / "db.sqlite3")),
-    }
+    "default": dj_database_url.config(
+        default=os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

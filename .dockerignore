@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+db.sqlite3
+var/
+.git
+.gitignore
+.vercel
+node_modules/
